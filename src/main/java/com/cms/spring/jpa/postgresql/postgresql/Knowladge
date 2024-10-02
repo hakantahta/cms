@@ -1,0 +1,73 @@
+Yapılabilecek İşlemler
+
+Tüm Oyuncuları Getirme
+Açıklama: Veritabanındaki tüm oyuncuları listelemek için kullanılır.
+Sınıf: CastController
+Yöntem: getAllCasts()
+Endpoint: GET /api/cast
+----------------------------------------------------------------------------------------
+Belirli Bir Oyuncuyu ID ile Getirme
+Açıklama: Belirtilen ID'ye sahip bir oyuncunun bilgilerini getirir.
+Sınıf: CastController
+Yöntem: getCastById(@PathVariable Long id)
+Endpoint: GET /api/cast/{id}
+----------------------------------------------------------------------------------------
+Yeni Oyuncu Ekleme
+Açıklama: Veritabanına yeni bir oyuncu ekler.
+Sınıf: CastController
+Yöntem: createCastManual(@RequestBody Cast cast)
+Endpoint: POST /api/cast/manual
+----------------------------------------------------------------------------------------
+Oyuncu Güncelleme
+Açıklama: Mevcut bir oyuncunun bilgilerini günceller.
+Sınıf: CastController
+Yöntem: updateCast(@PathVariable Long id, @RequestBody Cast castDetails)
+Endpoint: PUT /api/cast/{id}
+-----------------------------------------------------------------------------------------
+Oyuncu Silme
+Açıklama: Belirtilen ID'ye sahip bir oyuncuyu siler.
+Sınıf: CastController
+Yöntem: deleteCast(@PathVariable Long id)
+Endpoint: DELETE /api/cast/{id}
+-----------------------------------------------------------------------------------------
+Tüm İçerikleri Getirme
+Açıklama: Veritabanındaki tüm içerikleri listelemek için kullanılır.
+Sınıf: ContentController
+Yöntem: getAllContents()
+Endpoint: GET /api/contents
+-----------------------------------------------------------------------------------------
+Belirli Bir İçeriği ID ile Getirme
+Açıklama: Belirtilen ID'ye sahip bir içeriğin bilgilerini getirir.
+Sınıf: ContentController
+Yöntem: getContentById(@PathVariable Long id)
+Endpoint: GET /api/contents/{id}
+-----------------------------------------------------------------------------------------
+Manuel Veri Ekleme (İçerik)
+Açıklama: Yeni bir içerik eklerken metadata bilgilerini kullanır.
+Sınıf: ContentController
+Yöntem: createContentManual(@RequestBody Metadata metadata)
+Endpoint: POST /api/contents/manual
+------------------------------------------------------------------------------------------
+Cast Ekleme
+Açıklama: Belirli bir içeriğe (content) yeni bir oyuncu (cast) ekler.
+Sınıf: ContentController
+Yöntem: addCastToContent(@RequestBody CastResponse castResponse, @RequestParam Long contentId)
+Endpoint: POST /api/contents/manual/cast
+------------------------------------------------------------------------------------------
+IMDb API'den Veri Çekme
+Açıklama: IMDb API'den veri çekerek yeni bir içerik oluşturur.
+Sınıf: ContentController
+Yöntem: createContentFromIMDB(@RequestBody String title)
+Endpoint: POST /api/contents/fetch
+-------------------------------------------------------------------------------------------
+İçerik Güncelleme
+Açıklama: Mevcut bir içeriğin bilgilerini günceller.
+Sınıf: ContentController
+Yöntem: updateContent(@PathVariable Long id, @RequestBody Metadata metadata)
+Endpoint: PUT /api/contents/{id}
+----------------------------------------------------------------------------------------------
+İçerik Silme
+Açıklama: Belirtilen ID'ye sahip bir içeriği siler.
+Sınıf: ContentController
+Yöntem: deleteContent(@PathVariable Long id)
+Endpoint: DELETE /api/contents/{id}
