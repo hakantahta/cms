@@ -2,7 +2,10 @@ package com.cms.spring.jpa.postgresql.postgresql.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name = "castt")
@@ -20,11 +23,12 @@ public class Cast {
     private String poster;
 
     // Cast ve Content arasında çoka çok ilişki
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "content_cast",
             joinColumns = @JoinColumn(name = "cast_id"),
             inverseJoinColumns = @JoinColumn(name = "content_id")
     )
-    private List<Content> contents;
+    private Set<Content> contents = new HashSet<>();
 }
+

@@ -1,10 +1,9 @@
 package com.cms.spring.jpa.postgresql.postgresql.service;
 
-import com.cms.spring.jpa.postgresql.postgresql.SimpleResponse.SimpleContentResponse;
+import com.cms.spring.jpa.postgresql.postgresql.DTO.CastDTO;
+import com.cms.spring.jpa.postgresql.postgresql.config.CastMapper;
 import com.cms.spring.jpa.postgresql.postgresql.model.Cast;
-import com.cms.spring.jpa.postgresql.postgresql.model.Content;
 import com.cms.spring.jpa.postgresql.postgresql.repository.CastRepository;
-import com.cms.spring.jpa.postgresql.postgresql.responses.CastResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -18,29 +17,38 @@ public class CastService {
     @Autowired
     private CastRepository castRepository;
 
-    // Tüm oyuncuları getirme
-    public List<Cast> getAllCasts() {
-        return castRepository.findAll();
+    @Autowired
+    private CastMapper castMapper; // DTO'lar ile Entity'ler arasında dönüşümü sağlayan mapper
+
+    // Tüm oyuncuları DTO olarak getirme
+    public List<CastDTO> getAllCasts() {
+        List<Cast> castEntities = castRepository.findAll();
+        return castEntities.stream()
+                .map(castMapper::toCastDTO) // Entity'leri DTO'lara dönüştür
+                .collect(Collectors.toList());
     }
 
-    // ID'ye göre oyuncu getirme
-    public Optional<Cast> getCastById(Long id) {
-        return castRepository.findById(id);
+    // ID'ye göre oyuncuyu DTO olarak getirme
+    public Optional<CastDTO> getCastById(Long id) {
+        Optional<Cast> cast = castRepository.findById(id);
+        return cast.map(castMapper::toCastDTO); // Entity'yi DTO'ya dönüştür
     }
 
-    // Yeni oyuncu ekleme
-    public Cast createCast(Cast cast) {
-        return castRepository.save(cast);
+    // Yeni oyuncu ekleme (DTO'yu kullanarak)
+    public CastDTO createCast(CastDTO castDTO) {
+        Cast castEntity = castMapper.toCastEntity(castDTO); // DTO'yu entity'ye dönüştür
+        Cast savedCast = castRepository.save(castEntity); // Entity'yi veritabanına kaydet
+        return castMapper.toCastDTO(savedCast); // Kaydedilen entity'yi DTO'ya dönüştür
     }
 
-    // Oyuncu güncelleme
-    public Optional<Cast> updateCast(Long id, Cast castDetails) {
+    // Oyuncu güncelleme (DTO'ya göre)
+    public Optional<CastDTO> updateCast(Long id, CastDTO castDTO) {
         Optional<Cast> existingCast = castRepository.findById(id);
         if (existingCast.isPresent()) {
-            Cast cast = existingCast.get();
-            cast.setName(castDetails.getName());
-            cast.setPoster(castDetails.getPoster());
-            return Optional.of(castRepository.save(cast));
+            Cast castEntity = castMapper.toCastEntity(castDTO);
+            castEntity.setId(id); // Güncellenen entity'nin ID'sini ayarla
+            Cast updatedCast = castRepository.save(castEntity);
+            return Optional.of(castMapper.toCastDTO(updatedCast)); // Güncellenen entity'yi DTO'ya dönüştür
         }
         return Optional.empty();
     }
@@ -53,24 +61,4 @@ public class CastService {
         }
         return false;
     }
-
-    //Sadece oyuncunun adını ve resmini getirmeyi sağlayan response sınıfında kullandığımız toCastRespnse sınınfının referansı olan metod
-    public CastResponse toCastResponse(Cast cast) {
-        CastResponse response = new CastResponse();
-        response.setId(cast.getId());
-        response.setName(cast.getName());
-        response.setPoster(cast.getPoster());
-
-        // Content'leri SimpleContentResponse olarak ekle
-        List<SimpleContentResponse> contents = cast.getContents().stream()
-                .map(content -> new SimpleContentResponse(content.getId(), content.getDirector()))
-                .collect(Collectors.toList());
-        response.setContents(contents);
-
-        return response;
-    }
-
-
-
-
 }

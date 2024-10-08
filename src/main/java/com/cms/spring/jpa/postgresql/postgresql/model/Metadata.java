@@ -3,8 +3,6 @@ package com.cms.spring.jpa.postgresql.postgresql.model;
 import jakarta.persistence.*;
 import lombok.Data;
 
-import jakarta.persistence.*;
-
 @Entity
 @Table(name = "metadata")
 @Data

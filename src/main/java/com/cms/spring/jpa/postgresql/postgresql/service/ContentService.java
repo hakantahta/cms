@@ -1,134 +1,92 @@
 package com.cms.spring.jpa.postgresql.postgresql.service;
 
-import com.cms.spring.jpa.postgresql.postgresql.SimpleResponse.SimpleCastResponse;
-import com.cms.spring.jpa.postgresql.postgresql.SimpleResponse.SimpleMetadataResponse;
+import com.cms.spring.jpa.postgresql.postgresql.DTO.CastDTO;
+import com.cms.spring.jpa.postgresql.postgresql.DTO.ContentDTO;
+import com.cms.spring.jpa.postgresql.postgresql.config.CastMapper;
+import com.cms.spring.jpa.postgresql.postgresql.config.ContentMapper;
 import com.cms.spring.jpa.postgresql.postgresql.model.Cast;
 import com.cms.spring.jpa.postgresql.postgresql.model.Content;
-import com.cms.spring.jpa.postgresql.postgresql.model.Metadata;
 import com.cms.spring.jpa.postgresql.postgresql.repository.CastRepository;
 import com.cms.spring.jpa.postgresql.postgresql.repository.ContentRepository;
-import com.cms.spring.jpa.postgresql.postgresql.repository.MetadataRepository;
-import com.cms.spring.jpa.postgresql.postgresql.responses.CastResponse;
-import com.cms.spring.jpa.postgresql.postgresql.responses.ContentResponse;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
+@Transactional
 public class ContentService {
 
+    private final ContentRepository contentRepository;
+    private final CastRepository castRepository;
+    private final ContentMapper contentMapper;
+    private final CastMapper castMapper;
 
-    private ContentRepository contentRepository;
-    public ContentService(ContentRepository contentRepository) {
+    public ContentService(ContentRepository contentRepository, CastRepository castRepository,
+                          ContentMapper contentMapper, CastMapper castMapper) {
         this.contentRepository = contentRepository;
+        this.castRepository = castRepository;
+        this.contentMapper = contentMapper;
+        this.castMapper = castMapper;
+    }
+
+    // Tüm içerikleri getir
+    public List<ContentDTO> getAllContents() {
+        List<Content> contents = contentRepository.findAll(); // veya aşağıdaki gibi bir sorgu kullanabilirsiniz
+         //List<Content> contents = contentRepository.findAllWithCasts(); // özel bir sorgu
+        return contentMapper.toDTOs(contents);
     }
 
 
-    private MetadataRepository metadataRepository;
-    public MetadataRepository getMetadataRepository() {
-        return metadataRepository;
+    // ID'ye göre içerik getir
+    public Optional<ContentDTO> getContentById(Long id) {
+        return contentRepository.findById(id).map(contentMapper::toDTO);
     }
 
-
-    private CastRepository castRepository;
-    public CastRepository getCastRepository() {
-        return castRepository;
+    // İçeriği manuel ekleme
+    public ContentDTO createContentManual(ContentDTO contentDTO) {
+        Content content = contentMapper.toEntity(contentDTO); // DTO'yu entity'ye dönüştür
+        Content savedContent = contentRepository.save(content); // Veritabanına kaydet
+        return contentMapper.toDTO(savedContent); // Entity'den DTO'ya dönüşüm
     }
 
-
-    private IMDBService imdbService;
-    public IMDBService getImdbService() {
-        return imdbService;
+    // İçeriği güncelleme
+    public ContentDTO updateContent(Long id, ContentDTO contentDTO) {
+        Optional<Content> contentOptional = contentRepository.findById(id);
+        if (contentOptional.isPresent()) {
+            Content content = contentOptional.get();
+            content.setDirector(contentDTO.getDirector());
+            contentRepository.save(content); // İçeriği güncelle ve kaydet
+            return contentMapper.toDTO(content); // Güncellenmiş entity'yi DTO'ya dönüştür
+        } else {
+            throw new RuntimeException("Content not found with id: " + id);
+        }
     }
 
-    public List<Content> getAllContents() {
-        return contentRepository.findAll();
+    // İçerik silme
+    public void deleteContent(Long id) {
+        contentRepository.deleteById(id);
     }
 
-    public Optional<Content> getContentById(Long id) {
-        return contentRepository.findById(id);
-    }
+    // Cast ekleme metodu
+    public CastDTO addCastToContent(CastDTO castDTO, Long contentId) {
+        Optional<Content> contentOptional = contentRepository.findById(contentId);
 
-    public Content createContentManual(Metadata metadata) {
-        Metadata savedMetadata = metadataRepository.save(metadata);
-        Content content = new Content();
-        content.setMetadata(savedMetadata);
-        return contentRepository.save(content);
-    }
+        if (contentOptional.isPresent()) {
+            Content content = contentOptional.get();
+            Cast cast = castMapper.toCastEntity(castDTO); // DTO'dan entity'ye dönüşüm
 
-    public CastResponse addCastToContent(CastResponse castResponse, Long contentId) throws Exception {
-        Optional<Content> contentOpt = contentRepository.findById(contentId);
-        if (contentOpt.isPresent()) {
-            Cast cast = new Cast();
-            cast.setName(castResponse.getName());
-            cast.setPoster(castResponse.getPoster());
-
-            Content content = contentOpt.get();
-            content.getActors().add(cast);
-            cast.getContents().add(content);
-
+            // Cast'i kaydet ve content ile ilişkilendir
             castRepository.save(cast);
+            content.getCasts().add(cast); // Cast içeriğe ekleniyor
+
+            // Bu noktada content_cast tablosuna veriyi eklemek için content'i de kaydetmelisiniz.
             contentRepository.save(content);
 
-            CastResponse response = new CastResponse();
-            response.setId(cast.getId());
-            response.setName(cast.getName());
-            response.setPoster(cast.getPoster());
-
-            return response;
+            return castMapper.toCastDTO(cast); // Cast'i DTO'ya çevir ve döndür
         } else {
-            throw new Exception("Content not found");
+            throw new RuntimeException("Content not found with id: " + contentId);
         }
-    }
-
-    public Content createContentFromIMDB(String title) {
-        Metadata imdbMetadata = imdbService.getMetadataFromIMDB(title);
-        Content content = new Content();
-        content.setMetadata(imdbMetadata);
-        return contentRepository.save(content);
-    }
-
-    public Content updateContent(Long id, Metadata metadata) throws Exception {
-        Optional<Content> existingContent = contentRepository.findById(id);
-        if (existingContent.isPresent()) {
-            Content content = existingContent.get();
-            Metadata updatedMetadata = metadataRepository.save(metadata);
-            content.setMetadata(updatedMetadata);
-            return contentRepository.save(content);
-        } else {
-            throw new Exception("Content not found");
-        }
-    }
-
-    public void deleteContent(Long id) throws Exception {
-        if (contentRepository.existsById(id)) {
-            contentRepository.deleteById(id);
-        } else {
-            throw new Exception("Content not found");
-        }
-    }
-
-    public ContentResponse toContentResponse(Content content) {
-        ContentResponse response = new ContentResponse();
-        response.setId(content.getId());
-        response.setDirector(content.getDirector());
-        response.setCreatedAt(content.getCreatedAt().toString());
-
-        // Metadata'yı SimpleMetadataResponse ile dönüştürüyoruz
-        SimpleMetadataResponse metadataResponse = new SimpleMetadataResponse();
-        metadataResponse.setId(content.getMetadata().getId());
-        metadataResponse.setTitle(content.getMetadata().getTitle());
-        response.setMetadata(metadataResponse);
-
-        // Cast'ları SimpleCastResponse ile dönüştürüyoruz
-        List<SimpleCastResponse> actors = content.getActors().stream()
-                .map(cast -> new SimpleCastResponse(cast.getId(), cast.getName()))
-                .collect(Collectors.toList());
-        response.setActors(actors);
-
-        return response;
     }
 }

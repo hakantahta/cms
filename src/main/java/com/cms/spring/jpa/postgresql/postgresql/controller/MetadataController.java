@@ -1,5 +1,7 @@
 package com.cms.spring.jpa.postgresql.postgresql.controller;
 
+import com.cms.spring.jpa.postgresql.postgresql.DTO.MetadataDTO;
+import com.cms.spring.jpa.postgresql.postgresql.config.MetadataMapper;
 import com.cms.spring.jpa.postgresql.postgresql.model.Metadata;
 import com.cms.spring.jpa.postgresql.postgresql.service.MetadataService;
 import org.springframework.http.HttpStatus;
@@ -13,37 +15,47 @@ import java.util.Optional;
 @RequestMapping("/api/metadata")
 public class MetadataController {
 
-    private MetadataService metadataService;
+    private final MetadataService metadataService;
+    private final MetadataMapper metadataMapper;
 
-    public MetadataController(MetadataService metadataService) {
+    // Constructor injection ile MetadataService ve MetadataMapper'ı alıyoruz
+    public MetadataController(MetadataService metadataService, MetadataMapper metadataMapper) {
         this.metadataService = metadataService;
+        this.metadataMapper = metadataMapper;
     }
 
     // Tüm metadata'yı getir
     @GetMapping
-    public ResponseEntity<List<Metadata>> getAllMetadata() {
+    public ResponseEntity<List<MetadataDTO>> getAllMetadata() {
         try {
+            // Servisten Metadata entity listesini alın
             List<Metadata> metadataList = metadataService.getAllMetadata();
-            return new ResponseEntity<>(metadataList, HttpStatus.OK);
+            // Metadata entity listesini DTO'ya dönüştürmek için mapper kullanın
+            List<MetadataDTO> metadataDTOList = metadataMapper.toDTOs(metadataList);
+            return new ResponseEntity<>(metadataDTOList, HttpStatus.OK);
         } catch (Exception e) {
             e.printStackTrace();
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
+
+
+
+
     // ID'ye göre metadata getir
     @GetMapping("/{id}")
-    public ResponseEntity<Metadata> getMetadataById(@PathVariable Long id) {
-        Optional<Metadata> metadata = metadataService.getMetadataById(id);
+    public ResponseEntity<MetadataDTO> getMetadataById(@PathVariable Long id) {
+        Optional<MetadataDTO> metadata = metadataService.getMetadataById(id);
         return metadata.map(value -> new ResponseEntity<>(value, HttpStatus.OK))
                 .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
     // Yeni metadata ekle
     @PostMapping
-    public ResponseEntity<Metadata> createMetadata(@RequestBody Metadata metadata) {
+    public ResponseEntity<MetadataDTO> createMetadata(@RequestBody MetadataDTO metadataDTO) {
         try {
-            Metadata savedMetadata = metadataService.createMetadata(metadata);
+            MetadataDTO savedMetadata = metadataService.createMetadata(metadataDTO);
             return new ResponseEntity<>(savedMetadata, HttpStatus.CREATED);
         } catch (Exception e) {
             e.printStackTrace();
@@ -53,8 +65,8 @@ public class MetadataController {
 
     // Metadata güncelleme
     @PutMapping("/{id}")
-    public ResponseEntity<Metadata> updateMetadata(@PathVariable Long id, @RequestBody Metadata metadataDetails) {
-        Optional<Metadata> updatedMetadata = metadataService.updateMetadata(id, metadataDetails);
+    public ResponseEntity<MetadataDTO> updateMetadata(@PathVariable Long id, @RequestBody MetadataDTO metadataDTO) {
+        Optional<MetadataDTO> updatedMetadata = metadataService.updateMetadata(id, metadataDTO);
         return updatedMetadata.map(value -> new ResponseEntity<>(value, HttpStatus.OK))
                 .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }

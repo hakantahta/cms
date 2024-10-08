@@ -1,9 +1,7 @@
 package com.cms.spring.jpa.postgresql.postgresql.controller;
 
-import com.cms.spring.jpa.postgresql.postgresql.model.Cast;
-import com.cms.spring.jpa.postgresql.postgresql.responses.CastResponse;
+import com.cms.spring.jpa.postgresql.postgresql.DTO.CastDTO;
 import com.cms.spring.jpa.postgresql.postgresql.service.CastService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,17 +13,17 @@ import java.util.Optional;
 @RequestMapping("/api/castt")
 public class CastController {
 
-    //@Autowired yerine constructor ınjection kullandık
-    private CastService castService;
+    private final CastService castService;
+
     public CastController(CastService castService) {
         this.castService = castService;
     }
 
     // Tüm oyuncuları getirme
     @GetMapping
-    public ResponseEntity<List<Cast>> getAllCasts() {
+    public ResponseEntity<List<CastDTO>> getAllCasts() {
         try {
-            List<Cast> casts = castService.getAllCasts();
+            List<CastDTO> casts = castService.getAllCasts();
             return new ResponseEntity<>(casts, HttpStatus.OK);
         } catch (Exception e) {
             e.printStackTrace();
@@ -35,22 +33,17 @@ public class CastController {
 
     // ID'ye göre oyuncu getirme
     @GetMapping("/{id}")
-    public ResponseEntity<CastResponse> getCastById(@PathVariable Long id) {
-        Optional<Cast> cast = castService.getCastById(id);
-        if (cast.isPresent()) {
-            CastResponse response = castService.toCastResponse(cast.get()); // Entity to response mapping
-            return new ResponseEntity<>(response, HttpStatus.OK);
-        } else {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
+    public ResponseEntity<CastDTO> getCastById(@PathVariable Long id) {
+        Optional<CastDTO> cast = castService.getCastById(id);
+        return cast.map(value -> new ResponseEntity<>(value, HttpStatus.OK))
+                .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
-
     // Yeni oyuncu ekleme
-    @PostMapping("/manual")
-    public ResponseEntity<Cast> createCast(@RequestBody Cast cast) {
+    @PostMapping
+    public ResponseEntity<CastDTO> createCast(@RequestBody CastDTO castDTO) {
         try {
-            Cast savedCast = castService.createCast(cast);
+            CastDTO savedCast = castService.createCast(castDTO);
             return new ResponseEntity<>(savedCast, HttpStatus.CREATED);
         } catch (Exception e) {
             e.printStackTrace();
@@ -60,8 +53,8 @@ public class CastController {
 
     // Oyuncu güncelleme
     @PutMapping("/{id}")
-    public ResponseEntity<Cast> updateCast(@PathVariable Long id, @RequestBody Cast castDetails) {
-        Optional<Cast> updatedCast = castService.updateCast(id, castDetails);
+    public ResponseEntity<CastDTO> updateCast(@PathVariable Long id, @RequestBody CastDTO castDTO) {
+        Optional<CastDTO> updatedCast = castService.updateCast(id, castDTO);
         return updatedCast.map(value -> new ResponseEntity<>(value, HttpStatus.OK))
                 .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
